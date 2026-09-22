@@ -23,10 +23,25 @@ def value_iteration_step(V, P, gamma):
     n_actions = len(P[0])
 
     # TODO: initialize V_new and Q_new to zeros (np.zeros) 
+    V_new = np.zeros(n_states)
+    Q_new = np.zeros((n_states, n_actions))
+    delta = 0
 
     # TODO: apply BOE to obtain updated V_new (and Q_new) for all states and actions
 
     # TODO: obtain the max difference for all possible states V_new(s) - V(s) (not the mean)
+
+    for s in range(n_states):
+        for a in range(n_actions):
+            Q_new[s, a] = sum(
+                prob * (reward + gamma * V[next_state])
+                for prob, next_state, reward, _ in P[s][a]
+            )
+        V_new[s] = np.max(Q_new[s])
+        delta = max(delta, abs(V_new[s] - V[s]))
+
+
+    
 
     return V_new, Q_new, delta
 
@@ -45,8 +60,13 @@ def extract_policy(Q, P):
     n_states = len(P)
 
     # TODO: initialize policy to zeros (in this case int type, not float values)
+    policy = np.zeros(n_states, dtype=int)
+
 
     # TODO: iterate over all states and select action that maximizes Q(s) (np.argmax)
+    for s in range(n_states):
+        policy[s] = np.argmax(Q[s])
+
 
     return policy
 
@@ -147,6 +167,14 @@ def value_iteration(env, gamma=0.999, epsilon=1e-8):
     V_new = np.zeros(n_states)
 
     # TODO: main loop of algorithm, iterate infinitely and use value_iteration_step until convergence.
+    while True:
+        V_new, Q, delta = value_iteration_step(V_new, env.P, gamma)
+        value_history.append(V_new.copy())
+        iteration += 1
+
+        if delta < epsilon:
+            break
+    policy = extract_policy(Q, env.P)
 
     return V_new, Q, policy, value_history
 
@@ -179,6 +207,14 @@ def main():
     # # select one of the 2:
     # env = gym.make("FrozenLake-v1", is_slippery=False, map_name="8x8")
     # # env = gym.make("FrozenLake-v1", is_slippery=True, map_name="8x8")
+    env = gym.make("FrozenLake-v1", is_slippery=False, map_name="8x8")
+    
+    env.P = env.unwrapped.P 
+
+    V_fl, Q_fl, policy_fl, value_history_fl = value_iteration(env)
+
+    tools.plot_value_function(V_fl, env)
+    tools.plot_policy(policy_fl, env)
 
 if __name__ == "__main__":
     main()
